@@ -16,7 +16,6 @@ ingame_kb = ReplyKeyboardMarkup(
     resize_keyboard=True
 )
 
-
 def generate_inline_keyboard(options):
     return InlineKeyboardMarkup(
         inline_keyboard=[

@@ -4,6 +4,10 @@ from google.genai.errors import ServerError
 import asyncio
 import os
 
+# MODEL_NAME = "TheBloke/MythoMax-L2-13B-GPTQ"
+# tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+# model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, device_map="auto", torch_dtype=torch.float16)
+
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 MAX_HISTORY = 3
@@ -14,10 +18,17 @@ async def generate_scene_with_retry(prompt, retries=3, delay=2):
     for attempt in range(1, retries + 1):
         try:
             response = client.models.generate_content(
-                model="gemini-1.5-flash",
+                model="gemini-2.5-flash",
                 contents=prompt,
             )
-            return response
+            # inputs = tokenizer(prompt, return_tensors="pt").to("cuda")
+            # outputs = model.generate(**inputs, max_new_tokens=50)
+            #
+            # response = ollama.chat(
+            #     model='mythomax-l2:latest',
+            #     messages=[{'role': 'system', 'content': prompt}]
+            # )
+            return response.text.strip()
         except ServerError as e:
             if "503" in str(e) and attempt < retries:
                 await asyncio.sleep(delay)
@@ -37,12 +48,12 @@ async def generate_scene(history):
         {"Summarized story so far:\n" + "\n".join(history) if history else "Start of the story."}
 
         Затем:
-        Сгенерируйте одну сцену (4–10 предложений) и предложите 3 варианта действий для пользователя.  
+        Сгенерируйте одну сцену (3–5 предложений) и предложите 3 варианта действий для пользователя.  
         Каждый вариант должен быть на отдельной строке, начинаться с тире '-'.  
-        Каждый вариант должен быть не длиннее 48 символов. Делай всё с жёстким горячим гейским уклоном
+        Каждый вариант должен быть не длиннее 48 символов.
 
         Формат ответа:
-        <СЦЕНА>  
+        <СЦЕНА>
         - вариант 1  
         - вариант 2  
         - вариант 3
@@ -50,8 +61,7 @@ async def generate_scene(history):
 
     response = await generate_scene_with_retry(prompt)
 
-    full_text = response.text.strip()
-    lines = full_text.splitlines()
+    lines = response.splitlines()
 
     scene = lines[0]
     options = [line[2:].strip() for line in lines[1:] if line.startswith("-")]
